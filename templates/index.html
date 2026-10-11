@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thai Text Cleaner - AI for Thai</title>
+    <!-- Google Fonts: Prompt & Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons for clean UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Thai Text Cleaner</h1>
+                        <p class="subtitle">ระบบแก้ไขและทำความสะอาดข้อความภาษาไทยด้วย AI for Thai</p>
+                    </div>
+                </div>
+
+                <div class="header-badges">
+                    <span class="badge badge-tech"><i class="fa-solid fa-microchip"></i> AI for Thai API</span>
+                    <span id="apiKeyBadge" class="badge badge-warning">
+                        <i class="fa-solid fa-circle-dot"></i> กำลังตรวจสอบ API Key...
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+
+                <!-- Alert for API Key warning if not configured -->
+                <div id="apiKeyAlert" class="alert-box alert-warning d-none">
+                    <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="alert-content">
+                        <h4>ยังไม่ได้ตั้งค่า API Key ของ AI for Thai</h4>
+                        <p>กรุณาเปิดไฟล์ <code>.env</code> แล้วใส่ <code>AIFORTHAI_API_KEY</code> ของคุณจาก <a href="https://aiforthai.in.th/" target="_blank" rel="noopener">aiforthai.in.th</a> เพื่อเปิดใช้งานการเรียก API จริง</p>
+                    </div>
+                </div>
+
+                <!-- Input Card -->
+                <section class="card input-card">
+                    <div class="card-header">
+                        <div class="header-title">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <h2>ป้อนข้อความภาษาไทยที่ต้องการแก้ไข</h2>
+                        </div>
+                        <div class="sample-pills">
+                            <span class="pill-label">ข้อความตัวอย่าง:</span>
+                            <button type="button" class="btn-pill" data-sample="วันนีอากาศดีมากกก อยากไปเที่ยวทะเลจังเรย">ตัวอย่าง 1</button>
+                            <button type="button" class="btn-pill" data-sample="สวัสดีคับบบ ผมอยากสอบถามข้อมูลเพิ่มเติมน้าาา">ตัวอย่าง 2</button>
+                            <button type="button" class="btn-pill" data-sample="ขอบคุนนะคร้าบบบ ที่ช่วยเหลือในวันนี้นะค๊าบ">ตัวอย่าง 3</button>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="cleanseForm">
+                            <div class="textarea-wrapper">
+                                <textarea 
+                                    id="thaiTextInput" 
+                                    name="text" 
+                                    rows="5" 
+                                    placeholder="พิมพ์หรือวางข้อความภาษาไทยที่นี่... เช่น ข้อความที่มีคำพิมพ์ซ้ำ หรือคำผิด (เช่น สวัสดีคับบบ, วันนี้เหนื่อยมากๆๆๆ)"
+                                    maxlength="10000"
+                                    required
+                                ></textarea>
+                            </div>
+
+                            <div class="textarea-meta">
+                                <div class="char-count">
+                                    <span id="charCount">0</span> / 10,000 ตัวอักษร
+                                </div>
+                                <div class="action-buttons">
+                                    <button type="button" id="clearBtn" class="btn btn-secondary">
+                                        <i class="fa-solid fa-rotate-left"></i> ล้างข้อความ
+                                    </button>
+                                    <button type="submit" id="submitBtn" class="btn btn-primary">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> แก้ไขข้อความ
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Loading State Card -->
+                <div id="loadingSection" class="loading-container d-none">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">
+                        <h3>กำลังประมวลผลด้วย AI for Thai...</h3>
+                        <p>กำลังส่งข้อความไปยังบริการ Text Cleansing และรอผลลัพธ์ กรุณารอสักครู่</p>
+                    </div>
+                </div>
+
+                <!-- Error Display Card -->
+                <div id="errorSection" class="alert-box alert-danger d-none">
+                    <div class="alert-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                    <div class="alert-content">
+                        <h4 id="errorTitle">เกิดข้อผิดพลาดในการประมวลผล</h4>
+                        <p id="errorMessage">รายละเอียดข้อผิดพลาด</p>
+                        <div id="errorDetails" class="error-details d-none"></div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <section id="resultSection" class="results-container d-none">
+                    <div class="section-title">
+                        <i class="fa-solid fa-square-poll-vertical"></i>
+                        <h2>ผลลัพธ์การแก้ไขข้อความ</h2>
+                        <span class="status-pill status-success">
+                            <i class="fa-solid fa-check"></i> ประมวลผลสำเร็จ
+                        </span>
+                    </div>
+
+                    <div class="result-grid">
+                        <!-- Original Text Card -->
+                        <div class="card result-card card-original">
+                            <div class="card-header result-card-header">
+                                <div class="header-title">
+                                    <span class="badge badge-gray">ต้นฉบับ</span>
+                                    <h3>original_text</h3>
+                                </div>
+                                <button type="button" class="btn-copy" data-target="originalText" title="คัดลอกข้อความต้นฉบับ">
+                                    <i class="fa-regular fa-copy"></i> <span>คัดลอก</span>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="originalText" class="result-text-box"></div>
+                                <div class="result-stat">
+                                    <span id="originalCharCount">0 ตัวอักษร</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cleansed Text Card -->
+                        <div class="card result-card card-cleansed">
+                            <div class="card-header result-card-header">
+                                <div class="header-title">
+                                    <span class="badge badge-success">ข้อความที่แก้ไขแล้ว</span>
+                                    <h3>cleansing_text</h3>
+                                </div>
+                                <button type="button" class="btn-copy" data-target="cleansedText" title="คัดลอกข้อความที่แก้ไขแล้ว">
+                                    <i class="fa-regular fa-copy"></i> <span>คัดลอก</span>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="cleansedText" class="result-text-box cleansed-box"></div>
+                                <div class="result-stat">
+                                    <span id="cleansedCharCount">0 ตัวอักษร</span>
+                                    <span class="ai-badge"><i class="fa-solid fa-shield-halved"></i> AI for Thai Verified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Project & API Info Section (For Student presentation) -->
+                <section class="card info-card">
+                    <div class="card-header">
+                        <div class="header-title">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <h3>ข้อมูลบริการ AI for Thai (Text Cleansing)</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-info-grid">
+                            <div class="info-item">
+                                <span class="info-label">API Endpoint:</span>
+                                <code>https://api.aiforthai.in.th/textcleansing</code>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">HTTP Method:</span>
+                                <span class="method-tag">POST</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Header:</span>
+                                <code>Apikey: [อ่านจาก .env บน Backend]</code>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Content-Type:</span>
+                                <code>application/x-www-form-urlencoded</code>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Parameter:</span>
+                                <code>text</code>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Response JSON:</span>
+                                <code>original_text, cleansing_text</code>
+                            </div>
+                        </div>
+                        <div class="security-note">
+                            <i class="fa-solid fa-lock"></i>
+                            <span><strong>การรักษาความปลอดภัย:</strong> API Key ถูกจัดเก็บในตัวแปรแวดล้อม <code>.env</code> ฝั่ง Backend เท่านั้น ไม่มีการเปิดเผยใน Source Code หรือส่งมายัง Frontend</span>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="container footer-container">
+                <p>Thai Text Cleaner &copy; โครงการตัวอย่างสำหรับนักศึกษา เชื่อมต่อบริการ <a href="https://aiforthai.in.th/" target="_blank" rel="noopener">AI for Thai</a></p>
+                <p class="footer-sub">พัฒนาด้วย Flask, JavaScript, HTML5 & CSS3</p>
+            </div>
+        </footer>
+
+        <!-- Toast notification for copy action -->
+        <div id="toastNotification" class="toast d-none">
+            <i class="fa-solid fa-check"></i> <span id="toastMessage">คัดลอกเรียบร้อยแล้ว</span>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
